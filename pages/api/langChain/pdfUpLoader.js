@@ -17,16 +17,38 @@ export default async function handler(req, res) {
 
     const docs = await loader.load();
 
-    console.log(docs);
+    if (docs.length === 0) {
+      return res.status(404).json({ message: "Document not found" });
+    }
 
     // Chunk it
 
+    const splitter = new CharacterTextSplitter({
+      separator: " ",
+      chunkSize: 250,
+      chunckOverlap: 10,
+    });
+
+    const splitDocs = await splitter.splitDocuments(docs);
+
+    console.log(splitDocs.length);
     // Reduce the size of the metadata
+
+    const reducedDocs = splitDocs.map((doc) => {
+      const reducedMetadata = { ...doc.metadata };
+      delete reducedMetadata.pdf;
+      return new Document({
+        pageContent: doc.pageContent,
+        metadata: reducedMetadata,
+      });
+    });
+
+    console.log(reducedDocs.length);
 
     /** STEP TWO: UPLOAD TO DATABASE */
 
     // upload documents to Pinecone
-    return res.status(200).json({ result: docs });
+    return res.status(200).json({ result: reducedDocs });
   } else {
     res.status(405).json({ message: "Method not allowed" });
   }

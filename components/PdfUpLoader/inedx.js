@@ -1,2 +1,2 @@
-import PdfUpLoader from "./PdfUpLoader";
-export default PdfUpLoader;
+import PdfUpLoaderCS from "./PdfUpLoaderCS";
+export default PdfUpLoaderCS;

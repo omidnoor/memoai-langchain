@@ -9,7 +9,7 @@ import { getSession } from "@auth0/nextjs-auth0";
 import clientPromise from "lib/mongodb";
 import { ObjectId } from "mongodb";
 import { BsRobot } from "react-icons/bs";
-import PdfUpLoader from "components/PdfUpLoader/PdfUpLoader";
+import PdfUpLoaderCS from "components/PdfUpLoader/PdfUpLoaderCS";
 
 export default function ChatPage({ chatId, title, messages = [] }) {
   const [messageText, setMessageText] = useState("");
@@ -180,7 +180,7 @@ export default function ChatPage({ chatId, title, messages = [] }) {
                 </button>
               </fieldset>
             </form>
-            <PdfUpLoader />
+            <PdfUpLoaderCS />
           </footer>
         </div>
       </div>

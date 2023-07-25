@@ -1,6 +1,6 @@
 import { useState } from "react";
 
-const PdfUpLoader = () => {
+const PdfUpLoaderCS = () => {
   const [error, setError] = useState("");
   const handleSubmitPDF = async () => {
     try {
@@ -26,4 +26,4 @@ const PdfUpLoader = () => {
   };
   return <button onClick={handleSubmitPDF}>Upload</button>;
 };
-export default PdfUpLoader;
+export default PdfUpLoaderCS;
