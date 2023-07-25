@@ -31,7 +31,7 @@ export default async function handler(req, res) {
 
     const splitDocs = await splitter.splitDocuments(docs);
 
-    console.log(splitDocs.length);
+    // console.log(splitDocs.length);
     // Reduce the size of the metadata
 
     const reducedDocs = splitDocs.map((doc) => {
@@ -43,11 +43,24 @@ export default async function handler(req, res) {
       });
     });
 
-    console.log(reducedDocs.length);
+    // console.log(reducedDocs.length);
 
     /** STEP TWO: UPLOAD TO DATABASE */
+    const client = new PineconeClient();
+    await client.init({
+      apiKey: process.env.PINECONE_API_KEY,
+      environment: process.env.PINECONE_ENV,
+    });
+
+    const pineconeIndex = client.Index(process.env.PINECONE_INDEX);
 
     // upload documents to Pinecone
+    await PineconeStore.fromDocuments(reducedDocs, new OpenAIEmbeddings(), {
+      pineconeIndex,
+    });
+
+    console.log("successfully uploaded");
+
     return res.status(200).json({ result: reducedDocs });
   } else {
     res.status(405).json({ message: "Method not allowed" });
