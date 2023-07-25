@@ -9,6 +9,7 @@ import { getSession } from "@auth0/nextjs-auth0";
 import clientPromise from "lib/mongodb";
 import { ObjectId } from "mongodb";
 import { BsRobot } from "react-icons/bs";
+import PdfUpLoader from "components/PdfUpLoader/PdfUpLoader";
 
 export default function ChatPage({ chatId, title, messages = [] }) {
   const [messageText, setMessageText] = useState("");
@@ -18,9 +19,15 @@ export default function ChatPage({ chatId, title, messages = [] }) {
   const [newChatId, setNewChatId] = useState(null);
   const [fullMessage, setFullMessage] = useState("");
   const [originalChatId, setOriginalChatId] = useState(chatId);
+  const [firstMsg, setFirstMsg] = useState(true);
+  const [source, setSource] = useState(null);
   const router = useRouter();
 
   const routeHasChanged = chatId !== originalChatId;
+
+  const processToken = (token) => {
+    return token.replace(/\\n/g, "\n").replace(/\"/g, "");
+  };
 
   // when our route changes
   useEffect(() => {
@@ -52,49 +59,72 @@ export default function ChatPage({ chatId, title, messages = [] }) {
   }, [newChatId, generatingResponse, router]);
 
   const handleSubmit = async (e) => {
-    e.preventDefault();
-    setGeneratingResponse(true);
-    setOriginalChatId(chatId);
-    setNewChatMessages((prev) => {
-      const newChatMessages = [
-        ...prev,
-        {
-          _id: uuid(),
-          role: "user",
-          content: messageText,
+    try {
+      e.preventDefault();
+      setGeneratingResponse(true);
+      setOriginalChatId(chatId);
+      setNewChatMessages((prev) => {
+        const newChatMessages = [
+          ...prev,
+          {
+            _id: uuid(),
+            role: "user",
+            content: messageText,
+          },
+        ];
+        return newChatMessages;
+      });
+      setMessageText("");
+      const response = await fetch("/api/langChain/memory", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
         },
-      ];
-      return newChatMessages;
-    });
-    setMessageText("");
-
-    const response = await fetch("/api/chat/sendMessage", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        chatId,
-        message: messageText,
-      }),
-    });
-
-    const data = response.body;
-    if (!data) return;
-    const reader = data.getReader();
-    let content = "";
-    await streamReader(reader, (message) => {
-      if (message.event === "newChatId") {
-        setNewChatId(message.content);
-      } else {
-        setIncomingMessage((s) => `${s}${message.content}`);
-        content = content + message.content;
+        body: JSON.stringify({
+          chatId,
+          message: messageText,
+          firstMsg,
+        }),
+      });
+      if (source) {
+        source.close();
       }
-    });
-    setFullMessage(content);
-    setIncomingMessage("");
-    setGeneratingResponse(false);
+
+      const newSource = new EventSource("/api/langChain/memory");
+      setSource(newSource);
+
+      newSource.addEventListener("newToken", (e) => {
+        const token = processToken(e.data);
+        setIncomingMessage((prev) => prev + token);
+      });
+
+      newSource.addEventListener("end", () => {
+        newSource.close();
+      });
+
+      if (!response.ok) throw new Error("Something went wrong!");
+      const data = await response.json();
+      if (!data) return;
+      // const reader = data.getReader();
+      let content = "";
+      setIncomingMessage(data.content.response);
+      // content = content + data.content;
+      console.log();
+      setFullMessage(data.content.response);
+      setGeneratingResponse(false);
+      setFirstMsg(false);
+    } catch (error) {
+      console.log(error);
+    }
   };
+
+  useEffect(() => {
+    return () => {
+      if (source) {
+        source.close();
+      }
+    };
+  }, [source]);
 
   const allMessages = [...messages, ...newChatMessages];
 
@@ -124,9 +154,9 @@ export default function ChatPage({ chatId, title, messages = [] }) {
                     content={message.content}
                   />
                 ))}
-                {!!incomingMessage && !routeHasChanged && (
+                {/* {!!incomingMessage && !routeHasChanged && (
                   <Message role="assistant" content={incomingMessage} />
-                )}
+                )} */}
                 {!!incomingMessage && !!routeHasChanged && (
                   <Message
                     role="notice"
@@ -150,6 +180,7 @@ export default function ChatPage({ chatId, title, messages = [] }) {
                 </button>
               </fieldset>
             </form>
+            <PdfUpLoader />
           </footer>
         </div>
       </div>
