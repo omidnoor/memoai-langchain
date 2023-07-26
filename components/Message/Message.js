@@ -5,7 +5,6 @@ import ReactMarkdown from "react-markdown";
 
 const Message = ({ role, content }) => {
   const { user } = useUser();
-
   return (
     <div
       className={`grid grid-cols-[30px_1fr] gap-5 p-5 ${
@@ -36,7 +35,17 @@ const Message = ({ role, content }) => {
         )}
       </div>
       <div className="prose prose-invert">
-        <ReactMarkdown>{content}</ReactMarkdown>
+        <>
+          {/* <ReactMarkdown>{content}</ReactMarkdown> */}
+          {content.text}
+          {!!content.sourceDocuments &&
+            content.sourceDocuments?.map((doc, index) => (
+              <div className="text-white/50" key={index}>
+                <span className="text-bold text-white">Source Documents: </span>
+                {doc.pageContent}
+              </div>
+            ))}
+        </>
       </div>
     </div>
   );

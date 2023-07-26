@@ -69,13 +69,15 @@ export default function ChatPage({ chatId, title, messages = [] }) {
           {
             _id: uuid(),
             role: "user",
-            content: messageText,
+            content: {
+              text: messageText,
+            },
           },
         ];
         return newChatMessages;
       });
       setMessageText("");
-      const response = await fetch("/api/langChain/memory", {
+      const response = await fetch("/api/langChain/pdfQuery", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -86,47 +88,32 @@ export default function ChatPage({ chatId, title, messages = [] }) {
           firstMsg,
         }),
       });
-      if (source) {
-        source.close();
-      }
-
-      const newSource = new EventSource("/api/langChain/memory");
-      setSource(newSource);
-
-      newSource.addEventListener("newToken", (e) => {
-        const token = processToken(e.data);
-        setIncomingMessage((prev) => prev + token);
-      });
-
-      newSource.addEventListener("end", () => {
-        newSource.close();
-      });
 
       if (!response.ok) throw new Error("Something went wrong!");
       const data = await response.json();
       if (!data) return;
-      // const reader = data.getReader();
-      let content = "";
-      setIncomingMessage(data.content.response);
-      // content = content + data.content;
-      console.log();
-      setFullMessage(data.content.response);
+      // console.log(data.content.text);
+      setIncomingMessage((prev) => ({
+        _id: uuid(),
+        role: "assistant",
+        type: "bot",
+        sourceDocuments: data.content.sourceDocuments,
+        content: data.content.text,
+      }));
+      // console.log(incomingMessage);
+      setFullMessage(data.content);
       setGeneratingResponse(false);
       setFirstMsg(false);
     } catch (error) {
       console.log(error);
     }
   };
-
-  useEffect(() => {
-    return () => {
-      if (source) {
-        source.close();
-      }
-    };
-  }, [source]);
-
   const allMessages = [...messages, ...newChatMessages];
+  // console.log(
+  //   allMessages?.map((message) =>
+  //     console.log(message.content?.sourceDocuments?.[0]?.pageContent)
+  //   )
+  // );
 
   return (
     <>
@@ -147,7 +134,7 @@ export default function ChatPage({ chatId, title, messages = [] }) {
             )}
             {!!allMessages.length && (
               <div className="mb-auto">
-                {allMessages?.map((message, index) => (
+                {allMessages.map((message, index) => (
                   <Message
                     key={message._id}
                     role={message.role}
@@ -155,7 +142,7 @@ export default function ChatPage({ chatId, title, messages = [] }) {
                   />
                 ))}
                 {/* {!!incomingMessage && !routeHasChanged && (
-                  <Message role="assistant" content={incomingMessage} />
+                  <Message role="assistant" content={incomingMessage.content} />
                 )} */}
                 {!!incomingMessage && !!routeHasChanged && (
                   <Message
