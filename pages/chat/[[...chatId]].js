@@ -21,6 +21,9 @@ export default function ChatPage({ chatId, title, messages = [] }) {
   const [originalChatId, setOriginalChatId] = useState(chatId);
   const [firstMsg, setFirstMsg] = useState(true);
   const [source, setSource] = useState(null);
+  const [video, sendVideo] = useState(
+    "https://www.youtube.com/watch?v=I53asPKiqNo"
+  );
   const router = useRouter();
 
   const routeHasChanged = chatId !== originalChatId;
@@ -77,14 +80,16 @@ export default function ChatPage({ chatId, title, messages = [] }) {
         return newChatMessages;
       });
       setMessageText("");
-      const response = await fetch("/api/langChain/pdfQuery", {
+      // const response = await fetch("/api/langChain/pdfQuery", {
+      const response = await fetch("/api/langChain/videoQuery", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
           chatId,
-          message: messageText,
+          // message: messageText,
+          message: video,
           firstMsg,
         }),
       });

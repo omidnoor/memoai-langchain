@@ -40,9 +40,14 @@ const Message = ({ role, content }) => {
           {content.text}
           {!!content.sourceDocuments &&
             content.sourceDocuments?.map((doc, index) => (
-              <div className="text-white/50" key={index}>
-                <span className="text-bold text-white">Source Documents: </span>
-                {doc.pageContent}
+              <div key={index}>
+                <h3 className="text-sm font-bold text-gray-600">
+                  Source {index + 1}:
+                </h3>
+                <p className="mt-2 text-sm text-gray-100">{doc.pageContent}</p>
+                <pre className="mt-2 text-xs text-gray-100">
+                  {JSON.stringify(doc.metadata, null, 2)}
+                </pre>
               </div>
             ))}
         </>
