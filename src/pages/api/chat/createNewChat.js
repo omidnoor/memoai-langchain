@@ -1,9 +1,10 @@
 import { getSession } from "@auth0/nextjs-auth0";
-import clientPromise from "lib/mongodb";
+import clientPromise from "src/lib/mongodb";
 
 const RATE_LIMIT_TIME_FRAME = 6000; // 1 minute in milliseconds
 const RATE_LIMIT_MAX_REQUESTS = 100; // Max requests per time frame
 let requests = {};
+
 export default async function handler(req, res) {
   try {
     const now = Date.now();
@@ -18,32 +19,40 @@ export default async function handler(req, res) {
       res
         .status(429)
         .json({ message: "Too many requests, please try again later." });
+      return;
     } else {
       const { user } = await getSession(req, res);
+      const { message } = req.body;
+
+      if (!message || typeof message !== "string" || message.length > 200) {
+        res.status(422).json({
+          message: "Message is required and must be less than 200 characters",
+        });
+        return;
+      }
+
+      const newUserMessage = {
+        role: "user",
+        content: message,
+      };
       const client = await clientPromise;
       const db = client.db("memoai");
-      const chats = await db
-        .collection("chats")
-        .find(
-          {
-            userId: user.sub,
-          },
-          {
-            projection: {
-              userId: 0,
-              messages: 0,
-            },
-          }
-        )
-        .sort({
-          _id: -1,
-        })
-        .toArray();
-      res.status(200).json({ chats });
+      const chat = await db.collection("chats").insertOne({
+        userId: user.sub,
+        messages: [newUserMessage],
+        title: message,
+      });
+
+      res.status(200).json({
+        _id: chat.insertedId.toString(),
+        messages: [newUserMessage],
+        title: message,
+      });
     }
   } catch (error) {
     res.status(500).json({
-      message: "An error ocurred while fetching the chat list",
+      message: "An error occured while creating a new chat",
     });
+    console.log("error: ", error);
   }
 }

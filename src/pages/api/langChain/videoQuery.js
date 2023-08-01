@@ -6,14 +6,37 @@ import { HNSWLib } from "langchain/vectorstores/hnswlib";
 import { OpenAIEmbeddings } from "langchain/embeddings/openai";
 import { CharacterTextSplitter } from "langchain/text_splitter";
 import { OpenAI } from "langchain";
+import path from "path";
 
 // Global variables
 let chain;
 let chatHistory = [];
 
 // DO THIS SECOND
-const initializeChain = async (initialPrompt, transcript) => {
+const initializeChain = async (initialPrompt, transcript, directory) => {
   try {
+    const model = new ChatOpenAI({
+      temperature: 0.75,
+      modelName: "gpt-3.5-turbo",
+    });
+
+    // HNSWLib
+    const vectorStore = await HNSWLib.fromDocuments(
+      [
+        {
+          pageContent: transcript,
+        },
+      ],
+      new OpenAIEmbeddings()
+    );
+
+    await vectorStore.save(directory);
+    console.log(directory);
+    const loadVectorStore = await HNSWLib.load(
+      directory,
+      new OpenAIEmbeddings()
+    );
+
     console.log({ chatHistory });
     return response;
   } catch (error) {
@@ -25,7 +48,7 @@ export default async function handler(req, res) {
   if (req.method === "POST") {
     const { message, firstMsg } = req.body;
 
-    console.log(message, firstMsg);
+    // console.log(message, firstMsg);
     // Then if it's the first message, we want to initialize the chain, since it doesn't exist yet
     if (firstMsg) {
       try {
@@ -49,9 +72,15 @@ export default async function handler(req, res) {
           transcript += line.text;
         });
 
-        const response = await initializeChain(initialMessage, transcript);
+        // console.log(transcript);
+        const directory = path.join(process.cwd(), "documents");
+        const response = await initializeChain(
+          initialMessage,
+          transcript,
+          directory
+        );
         // And then we'll jsut get the response back and the chatHistory
-        return res.status(200).json({ output: response, chatHistory });
+        return res.status(200).json({ content: response, chatHistory });
       } catch (err) {
         console.error(err);
         return res

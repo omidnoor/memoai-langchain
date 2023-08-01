@@ -4,7 +4,7 @@ import { streamReader } from "openai-edge-stream";
 import { v4 as uuid } from "uuid";
 import Message from "components/Message/Message";
 import { useRouter } from "next/router";
-import { ChatSidebar } from "components/ChatSidebar";
+import { ChatSidebar } from "components/Chat/ChatSidebar";
 import { getSession } from "@auth0/nextjs-auth0";
 import clientPromise from "lib/mongodb";
 import { ObjectId } from "mongodb";
@@ -25,6 +25,8 @@ export default function ChatPage({ chatId, title, messages = [] }) {
     "https://www.youtube.com/watch?v=I53asPKiqNo"
   );
   const router = useRouter();
+
+  useEffect(() => {}, []);
 
   const routeHasChanged = chatId !== originalChatId;
 
@@ -102,8 +104,8 @@ export default function ChatPage({ chatId, title, messages = [] }) {
         _id: uuid(),
         role: "assistant",
         type: "bot",
-        sourceDocuments: data.content.sourceDocuments,
-        content: data.content.text,
+        // sourceDocuments: data?.content?.sourceDocuments,
+        content: data?.content?.text ? data?.content?.text : "",
       }));
       // console.log(incomingMessage);
       setFullMessage(data.content);
