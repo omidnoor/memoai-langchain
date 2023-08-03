@@ -3,7 +3,7 @@ import "../styles/globals.css";
 import { UserProvider } from "@auth0/nextjs-auth0/client";
 import { Outfit } from "next/font/google";
 import { Provider } from "react-redux";
-import store from "store/store";
+import store from "src/app/store";
 
 const outfit = Outfit({
   subsets: ["latin"],
